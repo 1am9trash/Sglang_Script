@@ -70,7 +70,6 @@ if [ "$MODEL_NAME" = "glm5" ]; then
     SAFETENSORS_FAST_GPU=1
     TOOL_CALL_PARSER="glm47"
     REASONING_PARSER="glm45"
-    MODEL_LOADER_EXTRA_CONFIG='{"enable_multithread_load": true, "num_threads": 8}'
 elif [ "$MODEL_NAME" = "deepseek" ]; then
     MODEL_PATH="/data/models/DeepSeek-V3.2/"
 fi
