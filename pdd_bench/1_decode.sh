@@ -23,9 +23,6 @@ echo "[decode] IB:   $DECODE_IB_DEVS"
 echo "[decode] Host: $DECODE_HOST:$DECODE_PORT"
 echo "[decode] Log:  $LOG_FILE"
 
-# aiter kernel warmup
-MAX_JOBS=192 python3 /sgl-workspace/aiter/op_tests/test_rmsnorm2d.py
-
 # 組裝可選參數
 OPTIONAL_ARGS=""
 [ -n "$NSA_PREFILL_BACKEND" ] && OPTIONAL_ARGS="$OPTIONAL_ARGS --nsa-prefill-backend $NSA_PREFILL_BACKEND"

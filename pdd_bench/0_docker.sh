@@ -41,5 +41,6 @@ sudo docker run -it --name "$CONTAINER_NAME" \
     -e SGLANG_USE_AITER=1 \
     $VOL_ARGS \
     -v /dev/infiniband:/dev/infiniband \
+    -v /usr/lib/x86_64-linux-gnu/libibverbs/libionic-rdmav34.so:/usr/lib/x86_64-linux-gnu/libibverbs/libionic-rdmav34.so:ro \
     "$DOCKER_IMAGE" \
     bash
