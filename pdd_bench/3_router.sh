@@ -12,8 +12,6 @@ mkdir -p "$LOG_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 LOG_FILE="${LOG_DIR}/router_${TIMESTAMP}.log"
 
-export PYTHONPATH="${SGLANG_PYTHON_PATH}:${PYTHONPATH}"
-
 PREFILL_URL="http://${PREFILL_HOST}:${PREFILL_PORT}"
 DECODE_URL="http://${DECODE_HOST}:${DECODE_PORT}"
 
@@ -36,7 +34,7 @@ while [ "$PREFILL_READY" = false ] || [ "$DECODE_READY" = false ]; do
     if [ "$PREFILL_READY" = false ] || [ "$DECODE_READY" = false ]; then
         sleep 5
         WAIT=$((WAIT + 1))
-        if [ $WAIT -ge 120 ]; then
+        if [ $WAIT -ge $HEALTH_CHECK_MAX_WAIT ]; then
             echo "[router] ERROR: Timeout after $((WAIT * 5))s. Prefill=$PREFILL_READY, Decode=$DECODE_READY"
             exit 1
         fi
@@ -51,9 +49,8 @@ echo "[router] Log:     $LOG_FILE"
 
 python3 -m sglang_router.launch_router \
     --pd-disaggregation \
-    --mini-lb \
     --prefill "$PREFILL_URL" \
     --decode "$DECODE_URL" \
-    --host 0.0.0.0 \
+    --host 127.0.0.1 \
     --port "$ROUTER_PORT" \
     2>&1 | tee "$LOG_FILE"

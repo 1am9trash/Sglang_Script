@@ -41,6 +41,5 @@ sudo docker run -it --name "$CONTAINER_NAME" \
     -e SGLANG_USE_AITER=1 \
     $VOL_ARGS \
     -v /dev/infiniband:/dev/infiniband \
-    -v "$HOST_IB_LIB":"$CONTAINER_IB_LIB":ro \
     "$DOCKER_IMAGE" \
     bash

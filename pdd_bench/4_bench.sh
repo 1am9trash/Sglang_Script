@@ -8,8 +8,6 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
 
-export PYTHONPATH="${SGLANG_PYTHON_PATH}:${PYTHONPATH}"
-
 ROUTER_URL="http://${PREFILL_HOST}:${ROUTER_PORT}"
 mkdir -p "$BENCH_OUTPUT_DIR"
 
