@@ -16,6 +16,9 @@ export LD_LIBRARY_PATH=/opt/rocm/lib:/usr/local/lib:${LD_LIBRARY_PATH}
 export SGLANG_USE_AITER=1
 export NCCL_IB_RETRY_CNT="$NCCL_IB_RETRY_CNT"
 export NCCL_IB_TIMEOUT="$NCCL_IB_TIMEOUT"
+[ -n "$SGLANG_ROCM_FUSED_DECODE_MLA" ] && export SGLANG_ROCM_FUSED_DECODE_MLA="$SGLANG_ROCM_FUSED_DECODE_MLA"
+[ -n "$ROCM_QUICK_REDUCE_QUANTIZATION" ] && export ROCM_QUICK_REDUCE_QUANTIZATION="$ROCM_QUICK_REDUCE_QUANTIZATION"
+[ -n "$SAFETENSORS_FAST_GPU" ] && export SAFETENSORS_FAST_GPU="$SAFETENSORS_FAST_GPU"
 
 echo "[prefill] Mode: $PDD_MODE"
 echo "[prefill] GPU:  ${PREFILL_GPUS:-all}"
@@ -46,7 +49,10 @@ OPTIONAL_ARGS=""
 [ -n "$TOOL_CALL_PARSER" ]    && OPTIONAL_ARGS="$OPTIONAL_ARGS --tool-call-parser $TOOL_CALL_PARSER"
 [ -n "$REASONING_PARSER" ]    && OPTIONAL_ARGS="$OPTIONAL_ARGS --reasoning-parser $REASONING_PARSER"
 [ "$DISABLE_RADIX_CACHE" = "true" ] && OPTIONAL_ARGS="$OPTIONAL_ARGS --disable-radix-cache"
+[ -n "$KV_CACHE_DTYPE" ]             && OPTIONAL_ARGS="$OPTIONAL_ARGS --kv-cache-dtype $KV_CACHE_DTYPE"
+[ -n "$MODEL_LOADER_EXTRA_CONFIG" ]  && OPTIONAL_ARGS="$OPTIONAL_ARGS --model-loader-extra-config '$MODEL_LOADER_EXTRA_CONFIG'"
 
+echo "[prefill] Model: $MODEL_NAME"
 echo "[prefill] Launching prefill server..."
 python3 -m sglang.launch_server \
     --model-path "$MODEL_PATH" \
@@ -56,7 +62,6 @@ python3 -m sglang.launch_server \
     --port "$PREFILL_PORT" \
     --tensor-parallel-size "$TP_SIZE" \
     --trust-remote-code \
-    --kv-cache-dtype "$KV_CACHE_DTYPE" \
     --mem-fraction-static "$MEM_FRACTION_STATIC" \
     --max-prefill-tokens "$MAX_PREFILL_TOKENS" \
     --chunked-prefill-size "$CHUNKED_PREFILL_SIZE" \
@@ -64,6 +69,5 @@ python3 -m sglang.launch_server \
     --max-running-requests "$MAX_RUNNING_REQUESTS" \
     --num-continuous-decode-steps "$NUM_CONTINUOUS_DECODE_STEPS" \
     --context-length "$CONTEXT_LENGTH" \
-    --model-loader-extra-config "$MODEL_LOADER_EXTRA_CONFIG" \
     $OPTIONAL_ARGS \
     2>&1 | tee "$LOG_FILE"

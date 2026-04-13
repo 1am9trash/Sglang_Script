@@ -19,7 +19,8 @@ DOCKER_VOLUMES=(
 )
 
 # -------------------- 模型 --------------------
-MODEL_PATH="/data/models/GLM-5-fp8/"
+# "glm5" 或 "deepseek"，切換後所有參數自動對應
+MODEL_NAME="glm5"
 
 # -------------------- 網路 --------------------
 PREFILL_PORT=30025
@@ -30,6 +31,8 @@ ROUTER_PORT=30028
 #  依 PDD_MODE 自動設定的參數
 # ============================================================
 ALL_IB_DEVS=$(ibv_devinfo 2>/dev/null | awk '/hca_id:/{print $2}' | paste -sd, -)
+PREFILL_IB_DEVS="$ALL_IB_DEVS"
+DECODE_IB_DEVS="$ALL_IB_DEVS"
 
 if [ "$PDD_MODE" = "single" ]; then
     PREFILL_HOST="127.0.0.1"
@@ -37,35 +40,40 @@ if [ "$PDD_MODE" = "single" ]; then
     PREFILL_GPUS="0,1,2,3"
     DECODE_GPUS="4,5,6,7"
     TP_SIZE=4
-    PREFILL_IB_DEVS="$ALL_IB_DEVS"
-    DECODE_IB_DEVS="$ALL_IB_DEVS"
 else
     PREFILL_HOST="10.235.58.248"       # ← 改成 prefill 機器的 IP
     DECODE_HOST="10.235.58.247"        # ← 改成 decode 機器的 IP
     PREFILL_GPUS=""
     DECODE_GPUS=""
     TP_SIZE=8
-    PREFILL_IB_DEVS="$ALL_IB_DEVS"
-    DECODE_IB_DEVS="$ALL_IB_DEVS"
 fi
 
-# -------------------- Server 共用參數 --------------------
+# ============================================================
+#  依 MODEL_NAME 自動設定的參數
+# ============================================================
+NSA_PREFILL_BACKEND="tilelang"
+NSA_DECODE_BACKEND="tilelang"
 KV_CACHE_DTYPE="fp8_e4m3"
-MEM_FRACTION_STATIC=0.8
+MEM_FRACTION_STATIC=0.85
+DISABLE_RADIX_CACHE=true
 MAX_PREFILL_TOKENS=131072
 CHUNKED_PREFILL_SIZE=131072
 CUDA_GRAPH_MAX_BS=128
 MAX_RUNNING_REQUESTS=128
 CONTEXT_LENGTH=131072
 NUM_CONTINUOUS_DECODE_STEPS=4
-DISABLE_RADIX_CACHE=true
-MODEL_LOADER_EXTRA_CONFIG='{"enable_multithread_load": true, "num_threads": 8}'
 
-# GLM-5 專用參數（DeepSeek 不需要可註解掉）
-NSA_PREFILL_BACKEND="tilelang"
-NSA_DECODE_BACKEND="tilelang"
-TOOL_CALL_PARSER="glm47"
-REASONING_PARSER="glm45"
+if [ "$MODEL_NAME" = "glm5" ]; then
+    MODEL_PATH="/data/models/GLM-5-fp8/"
+    SGLANG_ROCM_FUSED_DECODE_MLA=0
+    ROCM_QUICK_REDUCE_QUANTIZATION="INT4"
+    SAFETENSORS_FAST_GPU=1
+    TOOL_CALL_PARSER="glm47"
+    REASONING_PARSER="glm45"
+    MODEL_LOADER_EXTRA_CONFIG='{"enable_multithread_load": true, "num_threads": 8}'
+elif [ "$MODEL_NAME" = "deepseek" ]; then
+    MODEL_PATH="/data/models/DeepSeek-V3.2/"
+fi
 
 # -------------------- NCCL --------------------
 NCCL_IB_RETRY_CNT=15
