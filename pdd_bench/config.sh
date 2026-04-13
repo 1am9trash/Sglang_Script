@@ -10,24 +10,22 @@
 PDD_MODE="single"
 
 # -------------------- Docker --------------------
-DOCKER_IMAGE="rocm/sgl-dev:v0.5.10rc0-rocm720-mi35x-20260403"
-CONTAINER_NAME="pdd-bench"
+DOCKER_IMAGE="rocm/sgl-dev:v0.5.10rc0-rocm720-mi35x-20260412"
+CONTAINER_NAME="thomas_pdd_bench"
 DOCKER_SHM_SIZE="32g"
 DOCKER_VOLUMES=(
-    "$HOME/dockerx:/dockerx"
-    "/apps/models:/models"
+    "$HOME/thomas:/thomas"
     "/data:/data"
-    "/data2:/data2"
 )
-HOST_IB_LIB="/usr/local/lib/libbnxt_re-rdmav34.so"
-CONTAINER_IB_LIB="/usr/lib/x86_64-linux-gnu/libibverbs/libbnxt_re-rdmav34.so"
+HOST_IB_LIB="/usr/lib/x86_64-linux-gnu/libibverbs/libionic-rdmav34.so"
+CONTAINER_IB_LIB="/usr/lib/x86_64-linux-gnu/libibverbs/libionic-rdmav34.so"
 
 # -------------------- 模型 --------------------
 MODEL_PATH="/data/GLM-5-FP8/"
 # MODEL_PATH="/models/DeepSeek-V3.2-Exp/"
 
 # -------------------- SGLang 原始碼 --------------------
-SGLANG_PYTHON_PATH="/xinyi/sglang/python"
+SGLANG_PYTHON_PATH=""
 
 # -------------------- 網路 --------------------
 PREFILL_PORT=30025
@@ -44,8 +42,8 @@ if [ "$PDD_MODE" = "single" ]; then
     PREFILL_GPUS="0,1,2,3"
     DECODE_GPUS="4,5,6,7"
     TP_SIZE=4
-    PREFILL_IB_DEVS="bnxt_re0,bnxt_re1,bnxt_re2,bnxt_re3"
-    DECODE_IB_DEVS="bnxt_re4,bnxt_re5,bnxt_re6,bnxt_re7"
+    PREFILL_IB_DEVS="ionic_0,ionic_1,ionic_2,ionic_3"
+    DECODE_IB_DEVS="ionic_4,ionic_5,ionic_6,ionic_7"
 else
     # --- Multi-node: 兩台機器，各用全部 GPU ---
     PREFILL_HOST="10.235.58.248"       # ← 改成 prefill 機器的 IP
@@ -53,12 +51,12 @@ else
     PREFILL_GPUS=""                    # 不限制，用全部 GPU
     DECODE_GPUS=""
     TP_SIZE=8
-    PREFILL_IB_DEVS="bnxt_re0,bnxt_re1,bnxt_re2,bnxt_re3,bnxt_re4,bnxt_re5,bnxt_re6,bnxt_re7"
-    DECODE_IB_DEVS="bnxt_re0,bnxt_re1,bnxt_re2,bnxt_re3,bnxt_re4,bnxt_re5,bnxt_re6,bnxt_re7"
+    PREFILL_IB_DEVS="ionic_0,ionic_1,ionic_2,ionic_3,ionic_4,ionic_5,ionic_6,ionic_7"
+    DECODE_IB_DEVS="ionic_0,ionic_1,ionic_2,ionic_3,ionic_4,ionic_5,ionic_6,ionic_7"
 fi
 
 # -------------------- Server 共用參數 --------------------
-KV_CACHE_DTYPE="bf16"
+KV_CACHE_DTYPE="fp8_e4m3"
 MEM_FRACTION_STATIC=0.85
 MAX_PREFILL_TOKENS=131072
 CUDA_GRAPH_MAX_BS=128
@@ -83,16 +81,16 @@ NCCL_IB_RETRY_CNT=15
 NCCL_IB_TIMEOUT=22
 
 # -------------------- Benchmark --------------------
-BENCH_INPUT_LENS=(70000)
-BENCH_OUTPUT_LENS=(200)
-BENCH_CONCURRENCIES=(1 2 4 8 16 32)
+BENCH_INPUT_LENS=(1024)
+BENCH_OUTPUT_LENS=(1024)
+BENCH_CONCURRENCIES=(1 2 4 8)
 BENCH_DURATION=8                    # num_prompts = concurrency × duration
 BENCH_REQUEST_RATE="INF"
 BENCH_OUTPUT_DIR="./bench_results"
 
 # -------------------- Accuracy --------------------
 ACC_EVAL_NAME="gsm8k"
-ACC_NUM_EXAMPLES=100
+ACC_NUM_EXAMPLES=2000
 
 # -------------------- 日誌 --------------------
 LOG_DIR="./logs"
