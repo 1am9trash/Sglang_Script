@@ -7,7 +7,7 @@
 # ==================== 部署模式 ====================
 # "single" = 單機拆兩組 GPU（1P1D on 1 node）
 # "multi"  = 雙機各用全部 GPU（1P1D on 2 nodes）
-PDD_MODE="single"
+PDD_MODE="multi"
 
 # -------------------- Docker --------------------
 DOCKER_IMAGE="rocm/sgl-dev:v0.5.10rc0-rocm720-mi35x-20260412"
@@ -41,7 +41,7 @@ if [ "$PDD_MODE" = "single" ]; then
     DECODE_GPUS="4,5,6,7"
     TP_SIZE=4
 else
-    PREFILL_HOST="10.235.58.248"       # ← 改成 prefill 機器的 IP
+    PREFILL_HOST="10.235.58.246"       # ← 改成 prefill 機器的 IP
     DECODE_HOST="10.235.58.247"        # ← 改成 decode 機器的 IP
     PREFILL_GPUS=""
     DECODE_GPUS=""

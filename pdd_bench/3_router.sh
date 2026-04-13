@@ -51,6 +51,6 @@ python3 -m sglang_router.launch_router \
     --pd-disaggregation \
     --prefill "$PREFILL_URL" \
     --decode "$DECODE_URL" \
-    --host 127.0.0.1 \
+    --host 0.0.0.0 \
     --port "$ROUTER_PORT" \
     2>&1 | tee "$LOG_FILE"
