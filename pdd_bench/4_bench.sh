@@ -8,7 +8,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
 
-ROUTER_URL="http://${PREFILL_HOST}:${ROUTER_PORT}"
+ROUTER_URL="http://${ROUTER_HOST}:${ROUTER_PORT}"
 mkdir -p "$BENCH_OUTPUT_DIR"
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)

@@ -37,12 +37,14 @@ DECODE_IB_DEVS="$ALL_IB_DEVS"
 if [ "$PDD_MODE" = "single" ]; then
     PREFILL_HOST="127.0.0.1"
     DECODE_HOST="127.0.0.1"
+    ROUTER_HOST="127.0.0.1"
     PREFILL_GPUS="0,1,2,3"
     DECODE_GPUS="4,5,6,7"
     TP_SIZE=4
 else
     PREFILL_HOST="10.235.58.246"       # ← 改成 prefill 機器的 IP
     DECODE_HOST="10.235.58.247"        # ← 改成 decode 機器的 IP
+    ROUTER_HOST="$DECODE_HOST"         # ← router 跑在哪台就填哪台
     PREFILL_GPUS=""
     DECODE_GPUS=""
     TP_SIZE=8
