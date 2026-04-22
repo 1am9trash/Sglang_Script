@@ -13,19 +13,35 @@ LOG_FILE="${LOG_DIR}/prefill_${TIMESTAMP}.log"
 
 export LD_LIBRARY_PATH=/opt/rocm/lib:/usr/local/lib:${LD_LIBRARY_PATH}
 [ -n "$PREFILL_GPUS" ] && export HIP_VISIBLE_DEVICES="$PREFILL_GPUS"
-[ -n "$SGLANG_HOST_IP" ] && export SGLANG_HOST_IP="$SGLANG_HOST_IP"
 export SGLANG_USE_AITER=1
 export NCCL_IB_RETRY_CNT="$NCCL_IB_RETRY_CNT"
 export NCCL_IB_TIMEOUT="$NCCL_IB_TIMEOUT"
+
+if [ "$PDD_MODE" = "multi" ]; then
+    export GLOO_SOCKET_IFNAME="$NODE_NIC"
+    export NCCL_SOCKET_IFNAME="$NODE_NIC"
+    export MORI_SOCKET_IFNAME="$NODE_NIC"
+    export SGLANG_HOST_IP="${SGLANG_HOST_IP:-$PREFILL_HOST}"
+    [ -n "$MORI_RDMA_DEVICES" ] && export MORI_RDMA_DEVICES
+    [ -n "$MORI_DISABLE_TOPO" ] && export MORI_DISABLE_TOPO
+elif [ -n "$SGLANG_HOST_IP" ]; then
+    export SGLANG_HOST_IP
+fi
 [ -n "$SGLANG_ROCM_FUSED_DECODE_MLA" ] && export SGLANG_ROCM_FUSED_DECODE_MLA="$SGLANG_ROCM_FUSED_DECODE_MLA"
 [ -n "$ROCM_QUICK_REDUCE_QUANTIZATION" ] && export ROCM_QUICK_REDUCE_QUANTIZATION="$ROCM_QUICK_REDUCE_QUANTIZATION"
 [ -n "$SAFETENSORS_FAST_GPU" ] && export SAFETENSORS_FAST_GPU="$SAFETENSORS_FAST_GPU"
 
-echo "[prefill] Mode: $PDD_MODE"
-echo "[prefill] GPU:  ${PREFILL_GPUS:-all}"
-echo "[prefill] IB:   $PREFILL_IB_DEVS"
-echo "[prefill] Host: $PREFILL_HOST:$PREFILL_PORT"
-echo "[prefill] Log:  $LOG_FILE"
+echo "[prefill] Mode:         $PDD_MODE"
+echo "[prefill] GPU:          ${PREFILL_GPUS:-all}"
+echo "[prefill] IB:           $PREFILL_IB_DEVS"
+echo "[prefill] Host:         $PREFILL_HOST:$PREFILL_PORT"
+echo "[prefill] NODE_NIC:     ${NODE_NIC:-<unset>}"
+echo "[prefill] HOST_IP:      ${SGLANG_HOST_IP:-<auto>}"
+echo "[prefill] GLOO_IF:      ${GLOO_SOCKET_IFNAME:-<unset>}"
+echo "[prefill] MORI_IF:      ${MORI_SOCKET_IFNAME:-<unset>}"
+echo "[prefill] MORI_RDMA:    ${MORI_RDMA_DEVICES:-<unset>}"
+echo "[prefill] MORI_NOTOPO:  ${MORI_DISABLE_TOPO:-<unset>}"
+echo "[prefill] Log:          $LOG_FILE"
 
 # 組裝可選參數
 OPTIONAL_ARGS=""

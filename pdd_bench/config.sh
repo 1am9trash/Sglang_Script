@@ -42,10 +42,6 @@ fi
 PREFILL_IB_DEVS="$ALL_IB_DEVS"
 DECODE_IB_DEVS="$ALL_IB_DEVS"
 
-# Leave empty to let SGLang auto-detect the local host IP for MORI.
-# Set this explicitly (for example, a NIC IP) if auto-detection is wrong.
-SGLANG_HOST_IP=""
-
 if [ "$PDD_MODE" = "single" ]; then
     PREFILL_HOST="127.0.0.1"
     DECODE_HOST="127.0.0.1"
@@ -53,13 +49,25 @@ if [ "$PDD_MODE" = "single" ]; then
     PREFILL_GPUS="0,1,2,3"
     DECODE_GPUS="4,5,6,7"
     TP_SIZE=4
+    # Leave empty to let SGLang auto-detect the local host IP for MORI.
+    # Set this explicitly (for example, a NIC IP) if auto-detection is wrong.
+    SGLANG_HOST_IP=""
+    NODE_NIC=""
 else
-    PREFILL_HOST="10.235.58.246"       # ← 改成 prefill 機器的 IP
-    DECODE_HOST="10.235.58.247"        # ← 改成 decode 機器的 IP
-    ROUTER_HOST="$DECODE_HOST"         # ← router 跑在哪台就填哪台
+    PREFILL_HOST="10.235.58.246"        # ← 改成 prefill 機器的 IP (必須在 NODE_NIC 上)
+    DECODE_HOST="10.235.58.247"         # ← 改成 decode 機器的 IP (必須在 NODE_NIC 上)
+    ROUTER_HOST="$DECODE_HOST"          # ← router 跑在哪台就填哪台
     PREFILL_GPUS=""
     DECODE_GPUS=""
     TP_SIZE=8
+    # 數據面 NIC (GLOO/NCCL/MORI socket + SGLANG_HOST_IP auto-derive)
+    # 兩台機器若是同型號，NIC 名通常相同; 若不同，可在該機器上 export NODE_NIC=xxx 覆蓋
+    NODE_NIC="${NODE_NIC:-enp196s0}"
+    SGLANG_HOST_IP=""                   # 由 launcher 依 role 自動填成本機 IP
+    # MORI-IO RDMA 設備清單 (兩台機器必須完全一致，含順序)
+    # 可列多張聚合頻寬 (例如 ionic_0,ionic_1,...,ionic_8)，目前只用一張做功能驗證
+    MORI_RDMA_DEVICES="${MORI_RDMA_DEVICES:-ionic_0}"
+    MORI_DISABLE_TOPO="${MORI_DISABLE_TOPO:-1}"
 fi
 
 # ============================================================
