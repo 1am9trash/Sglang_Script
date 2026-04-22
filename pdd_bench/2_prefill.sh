@@ -13,6 +13,7 @@ LOG_FILE="${LOG_DIR}/prefill_${TIMESTAMP}.log"
 
 export LD_LIBRARY_PATH=/opt/rocm/lib:/usr/local/lib:${LD_LIBRARY_PATH}
 [ -n "$PREFILL_GPUS" ] && export HIP_VISIBLE_DEVICES="$PREFILL_GPUS"
+[ -n "$SGLANG_HOST_IP" ] && export SGLANG_HOST_IP="$SGLANG_HOST_IP"
 export SGLANG_USE_AITER=1
 export NCCL_IB_RETRY_CNT="$NCCL_IB_RETRY_CNT"
 export NCCL_IB_TIMEOUT="$NCCL_IB_TIMEOUT"
@@ -26,22 +27,6 @@ echo "[prefill] IB:   $PREFILL_IB_DEVS"
 echo "[prefill] Host: $PREFILL_HOST:$PREFILL_PORT"
 echo "[prefill] Log:  $LOG_FILE"
 
-# 等待 decode server 就緒
-echo "[prefill] Waiting for decode server at ${DECODE_HOST}:${DECODE_PORT} ..."
-WAIT=0
-while true; do
-    STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://${DECODE_HOST}:${DECODE_PORT}/health" 2>/dev/null || echo "000")
-    [ "$STATUS" = "200" ] && break
-    sleep 5
-    WAIT=$((WAIT + 1))
-    if [ $WAIT -ge $HEALTH_CHECK_MAX_WAIT ]; then
-        echo "[prefill] ERROR: Decode server not ready after $((WAIT * 5))s. Start 1_decode.sh first."
-        exit 1
-    fi
-    [ $((WAIT % 12)) -eq 0 ] && echo "[prefill]   ... still waiting ($((WAIT * 5))s elapsed, HTTP $STATUS)"
-done
-echo "[prefill] Decode server is ready!"
-
 # 組裝可選參數
 OPTIONAL_ARGS=""
 [ -n "$NSA_PREFILL_BACKEND" ] && OPTIONAL_ARGS="$OPTIONAL_ARGS --nsa-prefill-backend $NSA_PREFILL_BACKEND"
@@ -53,10 +38,12 @@ OPTIONAL_ARGS=""
 [ -n "$MODEL_LOADER_EXTRA_CONFIG" ]  && OPTIONAL_ARGS="$OPTIONAL_ARGS --model-loader-extra-config '$MODEL_LOADER_EXTRA_CONFIG'"
 
 echo "[prefill] Model: $MODEL_NAME"
+echo "[prefill] Transfer backend: $DISAGG_TRANSFER_BACKEND"
 echo "[prefill] Launching prefill server..."
 python3 -m sglang.launch_server \
     --model-path "$MODEL_PATH" \
     --disaggregation-mode prefill \
+    --disaggregation-transfer-backend "$DISAGG_TRANSFER_BACKEND" \
     --disaggregation-ib-device "$PREFILL_IB_DEVS" \
     --host "$PREFILL_HOST" \
     --port "$PREFILL_PORT" \

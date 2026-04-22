@@ -34,14 +34,13 @@ cat <<INFO | tee "$SUMMARY"
   Input lens:    ${BENCH_INPUT_LENS[*]}
   Output lens:   ${BENCH_OUTPUT_LENS[*]}
   Concurrencies: ${BENCH_CONCURRENCIES[*]}
-  Duration mult: $BENCH_DURATION
-  Request rate:  $BENCH_REQUEST_RATE
+  Prompt mult:   $BENCH_PROMPT_MULTIPLIER
+  Range ratio:   $BENCH_RANDOM_RANGE_RATIO
 ================================================================
 
 INFO
 
-# CSV header
-echo "isl,osl,concurrency,num_prompts,request_rate,req_per_s,input_tok_s,output_tok_s,mean_ttft_ms,median_ttft_ms,p99_ttft_ms,mean_tpot_ms,median_tpot_ms,p99_tpot_ms,mean_e2e_ms,median_e2e_ms,p99_e2e_ms" > "$CSV"
+echo "isl,osl,concurrency,num_prompts,req_per_s,input_tok_s,output_tok_s,mean_ttft_ms,median_ttft_ms,p99_ttft_ms,mean_tpot_ms,median_tpot_ms,p99_tpot_ms,mean_e2e_ms,median_e2e_ms,p99_e2e_ms" > "$CSV"
 
 printf "%-8s %-8s %-6s %-8s %-10s %-10s %-10s %-10s %-10s %-10s\n" \
     "ISL" "OSL" "Conc" "Prompts" "Req/s" "InTok/s" "OutTok/s" "TTFT_med" "TPOT_med" "E2E_med" | tee -a "$SUMMARY"
@@ -58,11 +57,7 @@ for idx in "${!BENCH_INPUT_LENS[@]}"; do
     for CONC in "${BENCH_CONCURRENCIES[@]}"; do
         N=$((N + 1))
 
-        if [[ "$BENCH_REQUEST_RATE" == "INF" ]]; then
-            NUM_PROMPTS=$((CONC * BENCH_DURATION))
-        else
-            NUM_PROMPTS=$((BENCH_REQUEST_RATE * BENCH_DURATION))
-        fi
+        NUM_PROMPTS=$((CONC * BENCH_PROMPT_MULTIPLIER))
 
         RESULT_JSON="${BENCH_OUTPUT_DIR}/bench_i${ISL}_o${OSL}_c${CONC}_${TIMESTAMP}.json"
 
@@ -72,13 +67,12 @@ for idx in "${!BENCH_INPUT_LENS[@]}"; do
         python3 -m sglang.bench_serving \
             --model "$MODEL_PATH" \
             --dataset-name random \
-            --host "$PREFILL_HOST" \
+            --host "$ROUTER_HOST" \
             --port "$ROUTER_PORT" \
             --num-prompts "$NUM_PROMPTS" \
             --random-input-len "$ISL" \
             --random-output-len "$OSL" \
-            --random-range-ratio 1 \
-            --request-rate "$BENCH_REQUEST_RATE" \
+            --random-range-ratio "$BENCH_RANDOM_RANGE_RATIO" \
             --max-concurrency "$CONC" \
             --output-file "$RESULT_JSON" \
             2>&1 | tee "${RESULT_JSON%.json}.log"
@@ -99,8 +93,7 @@ p99tpot = d.get('p99_tpot_ms', 0)
 me2e    = d.get('mean_e2e_latency_ms', 0)
 mde2e   = d.get('median_e2e_latency_ms', 0)
 p99e2e  = d.get('p99_e2e_latency_ms', 0)
-# CSV
-print(f'$ISL,$OSL,$CONC,$NUM_PROMPTS,$BENCH_REQUEST_RATE,{req_s:.2f},{in_tok:.0f},{out_tok:.0f},{mttft:.1f},{mdttft:.1f},{p99ttft:.1f},{mtpot:.2f},{mdtpot:.2f},{p99tpot:.2f},{me2e:.1f},{mde2e:.1f},{p99e2e:.1f}')
+print(f'$ISL,$OSL,$CONC,$NUM_PROMPTS,{req_s:.2f},{in_tok:.0f},{out_tok:.0f},{mttft:.1f},{mdttft:.1f},{p99ttft:.1f},{mtpot:.2f},{mdtpot:.2f},{p99tpot:.2f},{me2e:.1f},{mde2e:.1f},{p99e2e:.1f}')
 " >> "$CSV" 2>/dev/null
 
             python3 -c "

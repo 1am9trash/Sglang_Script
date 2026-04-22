@@ -38,10 +38,10 @@ fi
 echo ""
 
 # --- Test 2: GSM8K 精確度 + 並發吞吐測試 ---
-echo "=== [2/2] GSM8K bench (n=${ACC_NUM_EXAMPLES}, parallel=${ACC_NUM_EXAMPLES}) ==="
+echo "=== [2/2] GSM8K bench (n=${ACC_NUM_EXAMPLES}, parallel=${ACC_PARALLEL}) ==="
 python3 /sgl-workspace/sglang/benchmark/gsm8k/bench_sglang.py \
     --num-questions "$ACC_NUM_EXAMPLES" \
-    --parallel "$ACC_NUM_EXAMPLES" \
+    --parallel "$ACC_PARALLEL" \
     --port "$ROUTER_PORT"
 echo ""
 echo "=== Accuracy tests complete ==="

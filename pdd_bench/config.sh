@@ -9,6 +9,11 @@
 # "multi"  = 雙機各用全部 GPU（1P1D on 2 nodes）
 PDD_MODE="multi"
 
+# ==================== KV Transfer Backend ====================
+# "mooncake" = Mooncake transfer engine (default)
+# "mori"     = MoRI-IO transfer engine
+DISAGG_TRANSFER_BACKEND="mori"
+
 # -------------------- Docker --------------------
 DOCKER_IMAGE="rocm/sgl-dev:v0.5.10rc0-rocm720-mi35x-20260412"
 CONTAINER_NAME="thomas_pdd_bench"
@@ -31,8 +36,15 @@ ROUTER_PORT=30028
 #  依 PDD_MODE 自動設定的參數
 # ============================================================
 ALL_IB_DEVS=$(ibv_devinfo 2>/dev/null | awk '/hca_id:/{print $2}' | paste -sd, -)
+if [ -z "$ALL_IB_DEVS" ]; then
+    ALL_IB_DEVS=$(ls /sys/class/infiniband/ 2>/dev/null | paste -sd, -)
+fi
 PREFILL_IB_DEVS="$ALL_IB_DEVS"
 DECODE_IB_DEVS="$ALL_IB_DEVS"
+
+# Leave empty to let SGLang auto-detect the local host IP for MORI.
+# Set this explicitly (for example, a NIC IP) if auto-detection is wrong.
+SGLANG_HOST_IP=""
 
 if [ "$PDD_MODE" = "single" ]; then
     PREFILL_HOST="127.0.0.1"
@@ -55,7 +67,7 @@ fi
 # ============================================================
 NSA_PREFILL_BACKEND="tilelang"
 NSA_DECODE_BACKEND="tilelang"
-KV_CACHE_DTYPE="fp8_e4m3"
+KV_CACHE_DTYPE=""
 MEM_FRACTION_STATIC=0.85
 DISABLE_RADIX_CACHE=true
 MAX_PREFILL_TOKENS=131072
@@ -67,6 +79,15 @@ NUM_CONTINUOUS_DECODE_STEPS=4
 
 if [ "$MODEL_NAME" = "glm5" ]; then
     MODEL_PATH="/data/models/GLM-5-fp8/"
+    KV_CACHE_DTYPE="fp8_e4m3"
+    SGLANG_ROCM_FUSED_DECODE_MLA=0
+    ROCM_QUICK_REDUCE_QUANTIZATION="INT4"
+    SAFETENSORS_FAST_GPU=1
+    TOOL_CALL_PARSER="glm47"
+    REASONING_PARSER="glm45"
+elif [ "$MODEL_NAME" = "glm5_fp4" ]; then
+    MODEL_PATH="/data/models/GLM-5-MXFP4/"
+    KV_CACHE_DTYPE="fp8_e4m3"
     SGLANG_ROCM_FUSED_DECODE_MLA=0
     ROCM_QUICK_REDUCE_QUANTIZATION="INT4"
     SAFETENSORS_FAST_GPU=1
@@ -84,15 +105,16 @@ NCCL_IB_TIMEOUT=22
 HEALTH_CHECK_MAX_WAIT=240          # × 5 秒 = 20 分鐘
 
 # -------------------- Benchmark --------------------
-BENCH_INPUT_LENS=(1024)
-BENCH_OUTPUT_LENS=(1024)
-BENCH_CONCURRENCIES=(1 2 4 8)
-BENCH_DURATION=8
-BENCH_REQUEST_RATE="INF"
+BENCH_INPUT_LENS=(1024 8192)
+BENCH_OUTPUT_LENS=(1024 1024)
+BENCH_CONCURRENCIES=(4 8 16 32 64)
+BENCH_PROMPT_MULTIPLIER=10
+BENCH_RANDOM_RANGE_RATIO=0.8
 BENCH_OUTPUT_DIR="./bench_results"
 
 # -------------------- Accuracy --------------------
-ACC_NUM_EXAMPLES=200
+ACC_NUM_EXAMPLES=1200
+ACC_PARALLEL=200
 
 # -------------------- 日誌 --------------------
 LOG_DIR="./logs"

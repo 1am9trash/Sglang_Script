@@ -13,6 +13,7 @@ LOG_FILE="${LOG_DIR}/decode_${TIMESTAMP}.log"
 
 export LD_LIBRARY_PATH=/opt/rocm/lib:/usr/local/lib:${LD_LIBRARY_PATH}
 [ -n "$DECODE_GPUS" ] && export HIP_VISIBLE_DEVICES="$DECODE_GPUS"
+[ -n "$SGLANG_HOST_IP" ] && export SGLANG_HOST_IP="$SGLANG_HOST_IP"
 export SGLANG_USE_AITER=1
 export NCCL_IB_RETRY_CNT="$NCCL_IB_RETRY_CNT"
 export NCCL_IB_TIMEOUT="$NCCL_IB_TIMEOUT"
@@ -36,11 +37,19 @@ OPTIONAL_ARGS=""
 [ -n "$KV_CACHE_DTYPE" ]             && OPTIONAL_ARGS="$OPTIONAL_ARGS --kv-cache-dtype $KV_CACHE_DTYPE"
 [ -n "$MODEL_LOADER_EXTRA_CONFIG" ]  && OPTIONAL_ARGS="$OPTIONAL_ARGS --model-loader-extra-config '$MODEL_LOADER_EXTRA_CONFIG'"
 
+EXTRA_ARGS=""
+if [ "${1:-}" = "--no-cuda-graph" ]; then
+    EXTRA_ARGS="--disable-cuda-graph"
+    echo "[decode] *** CUDA Graph DISABLED (profile mode) ***"
+fi
+
 echo "[decode] Model: $MODEL_NAME"
+echo "[decode] Transfer backend: $DISAGG_TRANSFER_BACKEND"
 echo "[decode] Launching decode server..."
 python3 -m sglang.launch_server \
     --model-path "$MODEL_PATH" \
     --disaggregation-mode decode \
+    --disaggregation-transfer-backend "$DISAGG_TRANSFER_BACKEND" \
     --disaggregation-ib-device "$DECODE_IB_DEVS" \
     --host "$DECODE_HOST" \
     --port "$DECODE_PORT" \
@@ -54,4 +63,5 @@ python3 -m sglang.launch_server \
     --num-continuous-decode-steps "$NUM_CONTINUOUS_DECODE_STEPS" \
     --context-length "$CONTEXT_LENGTH" \
     $OPTIONAL_ARGS \
+    $EXTRA_ARGS \
     2>&1 | tee "$LOG_FILE"
